@@ -1,6 +1,7 @@
 # generate random DiscConfiguration
 import numpy as np 
 import json
+import os
 
 
 def generateDiscConfiguration():
@@ -39,10 +40,13 @@ class DataGenerator:
     def __init__(self):
         self.formats = ["JSON", "CSV"]
 
-    def generate(self, filename, sampleSize=32, formats=None):
+    def generate(self, filepath, sampleSize=32, formats=None):
         if formats is None:
             formats = self.formats
-        with open(filename, "w") as f:
+
+        abs_file_path = os.path.join(os.path.dirname(__file__), filepath)
+
+        with open(abs_file_path, "w") as f:
             f.write("[")
             for i in range(sampleSize):
                 config = generateDiscConfiguration()
@@ -85,4 +89,4 @@ class DataGenerator:
       
 Generator = DataGenerator()
 
-Generator.generate("train_data.txt", sampleSize=200, formats=["JSON", "CSV"])
+Generator.generate("_data/train_data.txt", sampleSize=200, formats=["JSON", "CSV"])
