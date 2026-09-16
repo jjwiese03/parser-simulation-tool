@@ -4,45 +4,44 @@ import torch
 import torch.nn as nn
 
 from transformers import AutoTokenizer, AutoModel
-from sentence_transformers import SentenceTransformer
+
 
 
 class Parser(nn.Module):
 
     def __init__(
         self,
-        embeddingModel="sentence-transformers/all-MiniLM-L6-v2",
+        tokenizer="intfloat/multilingual-e5-base",
         decimal_symbol=".",
         hidden_size=300,
+        custom_embedding = True,
+        embedding_dim = 64,
         num_layers=2,
-        num_classes=4
+        num_classes=4,
     ):
         super().__init__()
 
         self.decimal_symbol = decimal_symbol
-        self.tokenizer = AutoTokenizer.from_pretrained(embeddingModel)
-        print("loaded tokenizer")
-        self.embedding_layer = AutoModel.from_pretrained(embeddingModel).get_input_embeddings()
-        print("loaded embedding")
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer)
 
-        self.embedding_layer.requires_grad_(False)  # vortrainiertes Embedding einfrieren
+        if custom_embedding:        
+            self.embedding_layer = nn.Embedding(self.tokenizer.vocab_size, self.embedding_dim)
+            self.embedding_dim = embedding_dim
+        else:
+            self.embedding_layer = AutoModel.from_pretrained(tokenizer).get_input_embeddings()
+            self.embedding_layer.requires_grad_(False)  # vortrainiertes Embedding einfrieren
+            self.embedding_dim = self.embedding_layer.embedding_dim
 
-        # ----------------------------------------------------
-        # Bidirectional LSTM
-        # ----------------------------------------------------
+
 
         self.lstm = nn.LSTM(
-            input_size=self.embedding_layer.embedding_dim,
+            input_size=self.embedding_dim,
             hidden_size=hidden_size,
             num_layers=num_layers,
             bidirectional=True
         )
 
         lstm_output_size = hidden_size * 2
-
-        # ----------------------------------------------------
-        # Neural Network auf jedem LSTM-State
-        # ----------------------------------------------------
 
         self.classifier = nn.Sequential(
             nn.Linear(lstm_output_size, 256),
@@ -55,13 +54,6 @@ class Parser(nn.Module):
 
             nn.Linear(128, num_classes)
         )
-
-    def dim(self):
-        return self.embedding_layer.embedding_dim
-
-    # ----------------------------------------------------
-    # EXPORTIERBARER KERN — nur Tensor-Operationen, kein Text/Tokenizer
-    # ----------------------------------------------------
 
     def forward(self, token_ids: torch.LongTensor, number_mask: torch.BoolTensor):
         # token_ids:   (seq_len,) — an Zahlen-Positionen beliebige Dummy-ID (z.B. 0)
@@ -103,7 +95,6 @@ class Parser(nn.Module):
                 for tid in ids:
                     token_ids.append(tid)
                     number_mask.append(False)
-                    values.append(self.tokenizer.decode(tid))
 
         token_ids = torch.tensor(token_ids, dtype=torch.long)
         number_mask = torch.tensor(number_mask, dtype=torch.bool)

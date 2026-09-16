@@ -18,6 +18,3 @@ Thumbs.db
 
 # Umgebungsvariablen / Secrets
 .env
-
-# trained Models ignorieren
-trainedModels/*
