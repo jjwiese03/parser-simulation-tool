@@ -1,0 +1,23 @@
+# Virtuelle Python-Environments
+venv/
+.venv/
+env/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
+
+# Betriebssystem-Dateien
+.DS_Store
+Thumbs.db
+
+# Umgebungsvariablen / Secrets
+.env
+
+# trained Models ignorieren
+trainedModels/*
